@@ -1,0 +1,1 @@
+Preparing to replace package:cloud_firestore/firestore.dart with package:cloud_firestore/cloud_firestore.dart across multiple files.
