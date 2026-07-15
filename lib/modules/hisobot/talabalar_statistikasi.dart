@@ -23,7 +23,7 @@ class _TalabalarStatistikasiState extends State<TalabalarStatistikasi> {
 
   Future<void> _loadData() async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('users')
+        .collection('foydalanuvchilar')
         .where('role', isEqualTo: 'talaba')
         .get();
 
@@ -33,10 +33,10 @@ class _TalabalarStatistikasiState extends State<TalabalarStatistikasi> {
       UserModel student =
           UserModel.fromJson(doc.data() as Map<String, dynamic>);
 
-      // Faculty stats (using studentId prefix as faculty)
+      // Faculty stats (using faculty field saved at registration)
       String faculty =
-          student.studentId != null && student.studentId!.length >= 4
-              ? _getFacultyName(student.studentId!.substring(0, 4))
+          student.faculty != null && student.faculty!.trim().isNotEmpty
+              ? student.faculty!
               : "Noma'lum";
       _facultyStats[faculty] = (_facultyStats[faculty] ?? 0) + 1;
 
@@ -57,18 +57,6 @@ class _TalabalarStatistikasiState extends State<TalabalarStatistikasi> {
     }
 
     setState(() => _isLoading = false);
-  }
-
-  String _getFacultyName(String code) {
-    Map<String, String> faculties = {
-      'CS01': "Kompyuter fanlari",
-      'ENG': "Muhandislik",
-      'BUS': "Biznes",
-      'MED': "Tibbiyot",
-      'LAW': "Huquq",
-      'ART': "San'at",
-    };
-    return faculties[code] ?? code;
   }
 
   @override

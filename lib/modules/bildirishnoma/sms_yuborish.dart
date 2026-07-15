@@ -28,7 +28,7 @@ class _SmsYuborishState extends State<SmsYuborish> {
   Future<void> _loadStudents() async {
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection('users')
+          .collection('foydalanuvchilar')
           .where('role', isEqualTo: 'talaba')
           .get();
 

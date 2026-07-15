@@ -8,6 +8,7 @@ import '../modules/talabalar/talabalar_list.dart';
 import '../modules/xonalar/xonalar_list.dart';
 import '../modules/hisobot/dashboard.dart';
 import '../modules/murojaat/murojaatlar_list.dart';
+import '../modules/models/complaint_model.dart';
 import '../modules/bildirishnoma/bildirishnoma_yuborish.dart';
 import '../modules/services/auth_service.dart';
 import '../roles/admin_add_user_screen.dart'; // Yangi qo'shiladigan sahifa importi
@@ -66,7 +67,15 @@ class _AdminScreenState extends State<AdminScreen> {
       Dashboard(),
       TalabalarList(isAdmin: true, scaffoldKey: _scaffoldKey),
       XonalarList(isAdmin: true),
-      MurojaatlarList(isAdmin: true, studentId: null),
+      // Admin endi BARCHA murojaatlarni ko'radi: ham o'ziga ("admin"),
+      // ham mudirga yuborilganlarni — har birida "kimga" va "kimdan"
+      // (yuboruvchi) ma'lumoti bilan birga.
+      MurojaatlarList(
+        isAdmin: true,
+        studentId: null,
+        currentUser: widget.user,
+        roleFilter: null,
+      ),
       _RoleManagementTab(scaffoldKey: _scaffoldKey),
       TolovCheklariScreen(onBack: () => setState(() => _selectedIndex = 0)),
       _AdminSettingsTab(user: widget.user),
@@ -502,7 +511,7 @@ class _TolovBadgeDot extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .where('status', isEqualTo: 'pending')
           .snapshots(),
       builder: (context, snap) {
@@ -571,7 +580,7 @@ class __RoleManagementTabState extends State<_RoleManagementTab> {
     setState(() => _isLoading = true);
     try {
       QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection('users').get();
+          await FirebaseFirestore.instance.collection('foydalanuvchilar').get();
       if (!mounted) return;
       _users = snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -586,7 +595,7 @@ class __RoleManagementTabState extends State<_RoleManagementTab> {
   }
 
   Future<void> _changeRole(String userId, String newRole) async {
-    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+    await FirebaseFirestore.instance.collection('foydalanuvchilar').doc(userId).update({
       'role': newRole,
     });
     await _loadUsers();
@@ -1238,12 +1247,12 @@ class __AdminSettingsTabState extends State<_AdminSettingsTab> {
               setState(() => _isLoading = true);
 
               final collections = [
-                'users',
-                'rooms',
-                'complaints',
-                'payments',
-                'notifications',
-                'surveys'
+                'foydalanuvchilar',
+                'xonalar',
+                'murojaatlar',
+                'tolovlar',
+                'bildirishnomalar',
+                'sorovnomalar'
               ];
               try {
                 for (var col in collections) {

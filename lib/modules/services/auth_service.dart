@@ -13,7 +13,7 @@ import 'package:yotoqxona/modules/models/user_model.dart';
 //    saqlaydi, hujjat ID'si esa Firebase Auth UID bilan bir xil bo'ladi.
 class AuthService {
   static final CollectionReference _usersCollection =
-      FirebaseFirestore.instance.collection('users');
+      FirebaseFirestore.instance.collection('foydalanuvchilar');
 
   // Firebase login xatolik kodlarini talabaga tushunarli xabarga aylantiradi
   static String _friendlyAuthError(FirebaseAuthException e) {
@@ -46,6 +46,8 @@ class AuthService {
     required UserRole role,
     String? phoneNumber,
     String? faculty,
+    String? passportId,
+    DateTime? birthDate,
   }) async {
     showDialog(
       context: context,
@@ -72,6 +74,8 @@ class AuthService {
         phoneNumber: phoneNumber?.trim() ?? "+998900000000",
         role: role,
         faculty: faculty,
+        passportId: passportId?.trim(),
+        birthDate: birthDate,
       );
 
       // ✅ Firestore hujjat ID'si endi Auth UID bilan bir xil, va
@@ -245,8 +249,18 @@ class AuthService {
 
       if (docSnap.exists) {
         final docData = docSnap.data() as Map<String, dynamic>;
+        // 🔍 Debug: Firestore'dan aynan qanday "role" qiymati kelayotganini
+        // ko'rish uchun (admin login qilganda oddiy foydalanuvchi bo'lib
+        // kirib qolish muammosini aniqlashda foydali).
+        debugPrint(
+            '🔎 Login: uid=$uid | Firestore role="${docData['role']}" | doc-id="${docSnap.id}"');
         return UserModel.fromJson(docData);
       } else {
+        // 🔍 Debug: hujjat topilmagan holatda ham UID'ni chiqaramiz —
+        // shu UID bilan "foydalanuvchilar" kolleksiyasida qo'lda
+        // hujjat yaratish uchun kerak bo'ladi.
+        debugPrint(
+            '🔴 Login: uid=$uid uchun "foydalanuvchilar" kolleksiyasida hujjat topilmadi (email=$inputEmail).');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text(

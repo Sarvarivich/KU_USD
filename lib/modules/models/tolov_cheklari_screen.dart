@@ -34,6 +34,8 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _noteCtrl = TextEditingController();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -45,13 +47,14 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
   void dispose() {
     _tabController.dispose();
     _noteCtrl.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _approve(
       String docId, String studentId, String studentName) async {
     await FirebaseFirestore.instance
-        .collection('payment_checks')
+        .collection('tolov_cheklari')
         .doc(docId)
         .update({
       'status': 'approved',
@@ -118,7 +121,7 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
             onPressed: () async {
               Navigator.pop(ctx);
               await FirebaseFirestore.instance
-                  .collection('payment_checks')
+                  .collection('tolov_cheklari')
                   .doc(docId)
                   .update({
                 'status': 'rejected',
@@ -153,7 +156,7 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
     required String body,
     required String checkId,
   }) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
+    await FirebaseFirestore.instance.collection('bildirishnomalar').add({
       'userId': studentId,
       'title': title,
       'body': body,
@@ -242,12 +245,52 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildList('pending'),
-          _buildList('approved'),
-          _buildList('rejected'),
+          // 🔎 Talaba ismi bo'yicha qidiruv (admin va yotoqxona mudiri uchun)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _LC.card,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _LC.faint),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) =>
+                    setState(() => _searchQuery = value.trim().toLowerCase()),
+                decoration: InputDecoration(
+                  hintText: "Talaba ismi bo'yicha qidirish...",
+                  hintStyle: const TextStyle(color: _LC.muted, fontSize: 13),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      color: _LC.purple, size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded,
+                              color: _LC.muted, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildList('pending'),
+                _buildList('approved'),
+                _buildList('rejected'),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -256,7 +299,7 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
   Widget _buildList(String status) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .where('status', isEqualTo: status)
           .orderBy('uploadedAt', descending: true)
           .snapshots(),
@@ -295,28 +338,45 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
           );
         }
         final docs = snap.data?.docs ?? [];
-        if (docs.isEmpty) {
+
+        // 🔎 Talaba ismi bo'yicha mahalliy filtrlash
+        final filteredDocs = _searchQuery.isEmpty
+            ? docs
+            : docs.where((doc) {
+                final d = doc.data() as Map<String, dynamic>;
+                final studentName =
+                    (d['studentName'] ?? '').toString().toLowerCase();
+                return studentName.contains(_searchQuery);
+              }).toList();
+
+        if (filteredDocs.isEmpty) {
+          final noResultsForSearch = _searchQuery.isNotEmpty;
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  status == 'pending'
-                      ? Icons.hourglass_empty
-                      : status == 'approved'
-                          ? Icons.check_circle_outline
-                          : Icons.cancel_outlined,
+                  noResultsForSearch
+                      ? Icons.search_off_rounded
+                      : status == 'pending'
+                          ? Icons.hourglass_empty
+                          : status == 'approved'
+                              ? Icons.check_circle_outline
+                              : Icons.cancel_outlined,
                   size: 64,
                   color: Colors.grey.shade300,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  status == 'pending'
-                      ? "Kutilayotgan cheklar yo'q"
-                      : status == 'approved'
-                          ? "Tasdiqlangan cheklar yo'q"
-                          : "Rad etilgan cheklar yo'q",
+                  noResultsForSearch
+                      ? "\"$_searchQuery\" bo'yicha chek topilmadi"
+                      : status == 'pending'
+                          ? "Kutilayotgan cheklar yo'q"
+                          : status == 'approved'
+                              ? "Tasdiqlangan cheklar yo'q"
+                              : "Rad etilgan cheklar yo'q",
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -324,9 +384,9 @@ class _TolovCheklariScreenState extends State<TolovCheklariScreen>
         }
         return ListView.builder(
           padding: const EdgeInsets.all(12),
-          itemCount: docs.length,
+          itemCount: filteredDocs.length,
           itemBuilder: (context, i) {
-            final doc = docs[i];
+            final doc = filteredDocs[i];
             final d = doc.data() as Map<String, dynamic>;
             return _buildCheckCard(doc.id, d, status);
           },
@@ -621,7 +681,7 @@ class _PendingBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .where('status', isEqualTo: 'pending')
           .snapshots(),
       builder: (context, snap) {

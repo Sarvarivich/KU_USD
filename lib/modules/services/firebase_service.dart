@@ -9,20 +9,20 @@ class FirebaseService {
   // ============ USER OPERATIONS ============
 
   Future<DocumentSnapshot> getUser(String userId) async {
-    return await _firestore.collection('users').doc(userId).get();
+    return await _firestore.collection('foydalanuvchilar').doc(userId).get();
   }
 
   Future<void> updateUser(String userId, Map<String, dynamic> data) async {
-    await _firestore.collection('users').doc(userId).update(data);
+    await _firestore.collection('foydalanuvchilar').doc(userId).update(data);
   }
 
   Future<QuerySnapshot> getAllUsers() async {
-    return await _firestore.collection('users').get();
+    return await _firestore.collection('foydalanuvchilar').get();
   }
 
   Future<QuerySnapshot> getStudents() async {
     return await _firestore
-        .collection('users')
+        .collection('foydalanuvchilar')
         .where('role', isEqualTo: 'talaba')
         .get();
   }
@@ -30,32 +30,32 @@ class FirebaseService {
   // ============ ROOM OPERATIONS ============
 
   Future<DocumentReference> addRoom(Map<String, dynamic> roomData) async {
-    return await _firestore.collection('rooms').add(roomData);
+    return await _firestore.collection('xonalar').add(roomData);
   }
 
   Future<void> updateRoom(String roomId, Map<String, dynamic> data) async {
-    await _firestore.collection('rooms').doc(roomId).update(data);
+    await _firestore.collection('xonalar').doc(roomId).update(data);
   }
 
   Future<void> deleteRoom(String roomId) async {
-    await _firestore.collection('rooms').doc(roomId).delete();
+    await _firestore.collection('xonalar').doc(roomId).delete();
   }
 
   Future<DocumentSnapshot> getRoom(String roomId) async {
-    return await _firestore.collection('rooms').doc(roomId).get();
+    return await _firestore.collection('xonalar').doc(roomId).get();
   }
 
   Stream<QuerySnapshot> getRoomsStream() {
-    return _firestore.collection('rooms').snapshots();
+    return _firestore.collection('xonalar').snapshots();
   }
 
   Future<QuerySnapshot> getAllRooms() async {
-    return await _firestore.collection('rooms').get();
+    return await _firestore.collection('xonalar').get();
   }
 
   Future<QuerySnapshot> getAvailableRooms() async {
     return await _firestore
-        .collection('rooms')
+        .collection('xonalar')
         .where('status', isEqualTo: 'empty')
         .get();
   }
@@ -64,35 +64,35 @@ class FirebaseService {
 
   Future<DocumentReference> addComplaint(
       Map<String, dynamic> complaintData) async {
-    return await _firestore.collection('complaints').add(complaintData);
+    return await _firestore.collection('murojaatlar').add(complaintData);
   }
 
   Future<void> updateComplaint(
       String complaintId, Map<String, dynamic> data) async {
-    await _firestore.collection('complaints').doc(complaintId).update(data);
+    await _firestore.collection('murojaatlar').doc(complaintId).update(data);
   }
 
   Future<void> deleteComplaint(String complaintId) async {
-    await _firestore.collection('complaints').doc(complaintId).delete();
+    await _firestore.collection('murojaatlar').doc(complaintId).delete();
   }
 
   Stream<QuerySnapshot> getComplaintsStream(String? studentId) {
     if (studentId != null) {
       return _firestore
-          .collection('complaints')
+          .collection('murojaatlar')
           .where('studentId', isEqualTo: studentId)
           .orderBy('createdAt', descending: true)
           .snapshots();
     }
     return _firestore
-        .collection('complaints')
+        .collection('murojaatlar')
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
 
   Future<QuerySnapshot> getPendingComplaints() async {
     return await _firestore
-        .collection('complaints')
+        .collection('murojaatlar')
         .where('status', isEqualTo: 'pending')
         .get();
   }
@@ -100,19 +100,19 @@ class FirebaseService {
   // ============ PAYMENT OPERATIONS ============
 
   Future<DocumentReference> addPayment(Map<String, dynamic> paymentData) async {
-    return await _firestore.collection('payments').add(paymentData);
+    return await _firestore.collection('tolovlar').add(paymentData);
   }
 
   Future<QuerySnapshot> getStudentPayments(String studentId) async {
     return await _firestore
-        .collection('payments')
+        .collection('tolovlar')
         .where('studentId', isEqualTo: studentId)
         .orderBy('date', descending: true)
         .get();
   }
 
   Future<double> getTotalIncome() async {
-    QuerySnapshot snapshot = await _firestore.collection('payments').get();
+    QuerySnapshot snapshot = await _firestore.collection('tolovlar').get();
     double total = 0;
     for (var doc in snapshot.docs) {
       total += (doc['amount'] ?? 0);
@@ -121,7 +121,7 @@ class FirebaseService {
   }
 
   Future<Map<String, double>> getMonthlyIncome(int year) async {
-    QuerySnapshot snapshot = await _firestore.collection('payments').get();
+    QuerySnapshot snapshot = await _firestore.collection('tolovlar').get();
     Map<String, double> monthlyIncome = {};
 
     for (var doc in snapshot.docs) {
@@ -139,15 +139,15 @@ class FirebaseService {
   // ============ SURVEY OPERATIONS ============
 
   Future<DocumentReference> addSurvey(Map<String, dynamic> surveyData) async {
-    return await _firestore.collection('surveys').add(surveyData);
+    return await _firestore.collection('sorovnomalar').add(surveyData);
   }
 
   Future<QuerySnapshot> getSurveys() async {
-    return await _firestore.collection('surveys').get();
+    return await _firestore.collection('sorovnomalar').get();
   }
 
   Future<double> getAverageRating() async {
-    QuerySnapshot snapshot = await _firestore.collection('surveys').get();
+    QuerySnapshot snapshot = await _firestore.collection('sorovnomalar').get();
     if (snapshot.docs.isEmpty) return 0;
 
     double total = 0;
@@ -197,7 +197,7 @@ class FirebaseService {
         rooms.docs.where((doc) => doc['status'] == 'empty').length;
 
     // Complaints stats
-    QuerySnapshot complaints = await _firestore.collection('complaints').get();
+    QuerySnapshot complaints = await _firestore.collection('murojaatlar').get();
     stats['totalComplaints'] = complaints.docs.length;
     stats['pendingComplaints'] =
         complaints.docs.where((doc) => doc['status'] == 'pending').length;
@@ -220,10 +220,10 @@ class FirebaseService {
       String roomId = entry.value;
 
       DocumentReference studentRef =
-          _firestore.collection('users').doc(studentId);
-      DocumentReference roomRef = _firestore.collection('rooms').doc(roomId);
+          _firestore.collection('foydalanuvchilar').doc(studentId);
+      DocumentReference roomRef = _firestore.collection('xonalar').doc(roomId);
 
-      final roomDoc = await _firestore.collection('rooms').doc(roomId).get();
+      final roomDoc = await _firestore.collection('xonalar').doc(roomId).get();
 
       final roomNumber = roomDoc['roomNumber'].toString();
 
@@ -242,19 +242,19 @@ class FirebaseService {
   // ============ REAL-TIME LISTENERS ============
 
   Stream<QuerySnapshot> listenToRooms() {
-    return _firestore.collection('rooms').snapshots();
+    return _firestore.collection('xonalar').snapshots();
   }
 
   Stream<QuerySnapshot> listenToStudents() {
     return _firestore
-        .collection('users')
+        .collection('foydalanuvchilar')
         .where('role', isEqualTo: 'talaba')
         .snapshots();
   }
 
   Stream<QuerySnapshot> listenToComplaints() {
     return _firestore
-        .collection('complaints')
+        .collection('murojaatlar')
         .orderBy('createdAt', descending: true)
         .snapshots();
   }

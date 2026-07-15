@@ -14,9 +14,27 @@ enum UserRole {
   const UserRole(this.name);
 
   factory UserRole.fromString(String value) {
+    // ⚠️ Diagnostika: agar Firestore'dagi "role" maydoni
+    // enum qiymatlaridan ('talaba', 'mudir', 'moliyachi', 'superAdmin')
+    // birortasiga ANIQ mos kelmasa (masalan bo'sh, boshqa yozilishda,
+    // katta-kichik harf xato bo'lsa), tizim JIMgina "talaba"ga
+    // tushirib yuboradi. Shu sabab admin login qilganda oddiy
+    // profil bo'lib kirib qolishi mumkin. Shuning uchun bu holatni
+    // konsolga chiqaramiz — Firestore'dagi haqiqiy qiymatni tekshirish
+    // uchun.
     return UserRole.values.firstWhere(
       (e) => e.name == value,
-      orElse: () => UserRole.talaba,
+      orElse: () {
+        // ignore: avoid_print
+        print(
+            '⚠️ UserRole.fromString: Noma\'lum rol qiymati topildi: "$value". '
+            'Firestore\'dagi "foydalanuvchilar/{uid}" hujjatida "role" '
+            'maydoni aniq "superAdmin" / "mudir" / "moliyachi" / "talaba" '
+            'so\'zlaridan biriga teng ekanini tekshiring (katta-kichik harf, '
+            'bo\'shliq va yozilishiga e\'tibor bering). Vaqtincha "talaba" '
+            'sifatida kirilmoqda.');
+        return UserRole.talaba;
+      },
     );
   }
 }
@@ -31,6 +49,8 @@ class UserModel {
   final String? studentId;
   final String? roomId;
   final String? faculty;
+  final String? passportId;
+  final DateTime? birthDate;
   final DateTime? createdAt;
   final Map<String, dynamic>? additionalData;
 
@@ -44,6 +64,8 @@ class UserModel {
     this.studentId,
     this.roomId,
     this.faculty,
+    this.passportId,
+    this.birthDate,
     this.createdAt,
     this.additionalData,
   });
@@ -63,6 +85,8 @@ class UserModel {
       'studentId': studentId,
       'roomId': roomId,
       'faculty': faculty,
+      'passportId': passportId,
+      'birthDate': birthDate,
       'createdAt': createdAt,
       ...?additionalData,
     };
@@ -84,6 +108,8 @@ class UserModel {
           'studentId',
           'roomId',
           'faculty',
+          'passportId',
+          'birthDate',
           'createdAt',
         ].contains(key));
 
@@ -100,6 +126,10 @@ class UserModel {
       studentId: parsed['studentId'] as String?,
       roomId: parsed['roomId'] as String?,
       faculty: parsed['faculty'] as String?,
+      passportId: parsed['passportId'] as String?,
+      birthDate: parsed['birthDate'] != null
+          ? (parsed['birthDate'] as dynamic).toDate()
+          : null,
       createdAt: parsed['createdAt'] != null
           ? (parsed['createdAt'] as dynamic).toDate()
           : null,
@@ -118,6 +148,8 @@ class UserModel {
     String? studentId,
     String? roomId,
     String? faculty,
+    String? passportId,
+    DateTime? birthDate,
     DateTime? createdAt,
     Map<String, dynamic>? additionalData,
   }) {
@@ -131,6 +163,8 @@ class UserModel {
       studentId: studentId ?? this.studentId,
       roomId: roomId ?? this.roomId,
       faculty: faculty ?? this.faculty,
+      passportId: passportId ?? this.passportId,
+      birthDate: birthDate ?? this.birthDate,
       createdAt: createdAt ?? this.createdAt,
       additionalData: additionalData ?? this.additionalData,
     );

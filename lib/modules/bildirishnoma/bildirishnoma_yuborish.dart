@@ -29,7 +29,7 @@ class _BildirishnomaYuborishState extends State<BildirishnomaYuborish> {
 
   Future<void> _loadStudents() async {
     final snapshot = await FirebaseFirestore.instance
-        .collection('users')
+        .collection('foydalanuvchilar')
         .where('role', isEqualTo: 'talaba')
         .get();
 
@@ -129,7 +129,7 @@ class _BildirishnomaYuborishState extends State<BildirishnomaYuborish> {
 
   // 🔥 SAVE TO FIRESTORE
   Future<void> _saveToDatabase() async {
-    final users = await FirebaseFirestore.instance.collection('users').get();
+    final users = await FirebaseFirestore.instance.collection('foydalanuvchilar').get();
 
     for (var user in users.docs) {
       if (_selectedAudience == 'students' && user['role'] != 'talaba') continue;
@@ -139,7 +139,7 @@ class _BildirishnomaYuborishState extends State<BildirishnomaYuborish> {
       if (_selectedAudience == 'all' ||
           _selectedAudience == 'students' ||
           user.id == _selectedStudentId) {
-        await FirebaseFirestore.instance.collection('notifications').add({
+        await FirebaseFirestore.instance.collection('bildirishnomalar').add({
           'userId': user.id,
           'title': _titleController.text,
           'body': _bodyController.text,

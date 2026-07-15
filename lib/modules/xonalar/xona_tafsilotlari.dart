@@ -31,7 +31,7 @@ class _XonaTafsilotlariState extends State<XonaTafsilotlari> {
       List<UserModel> students = [];
       for (String id in _room.studentIds) {
         DocumentSnapshot doc =
-            await FirebaseFirestore.instance.collection('users').doc(id).get();
+            await FirebaseFirestore.instance.collection('foydalanuvchilar').doc(id).get();
         if (doc.exists) {
           students.add(UserModel.fromJson(doc.data() as Map<String, dynamic>));
         }
@@ -63,7 +63,7 @@ class _XonaTafsilotlariState extends State<XonaTafsilotlari> {
 
               // Remove from room
               await FirebaseFirestore.instance
-                  .collection('rooms')
+                  .collection('xonalar')
                   .doc(_room.id)
                   .update({
                 'currentOccupants': _room.currentOccupants - 1,
@@ -72,7 +72,7 @@ class _XonaTafsilotlariState extends State<XonaTafsilotlari> {
 
               // Remove roomId from student
               await FirebaseFirestore.instance
-                  .collection('users')
+                  .collection('foydalanuvchilar')
                   .doc(student.id)
                   .update({
                 'roomId': null,

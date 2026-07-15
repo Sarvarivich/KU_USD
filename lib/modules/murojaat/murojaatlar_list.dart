@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/complaint_model.dart';
+import '../models/user_model.dart';
 import 'murojaat_tafsilotlari.dart';
 import 'murojaat_yozish.dart';
 
-// ─── Creative LIGHT palette ───
+// ─── Boshqa bo'limlar bilan bir xil DARK palette ───
 class _LC {
-  static const bg = Color(0xFFF3F1FB);
-  static const card = Colors.white;
+  static const bg = Color(0xFF0F0D1A);
+  static const card = Color(0xFF1A1730);
   static const purple = Color(0xFF6C5CE7);
   static const violet = Color(0xFFA29BFE);
   static const teal = Color(0xFF00CEC9);
@@ -15,22 +16,54 @@ class _LC {
   static const pink = Color(0xFFFD79A8);
   static const orange = Color(0xFFFDCB6E);
   static const coral = Color(0xFFE17055);
-  static const ink = Color(0xFF2D2A4A);
-  static const muted = Color(0xFF8B86A8);
-  static const faint = Color(0xFFE9E5FA);
+  static const ink = Color(0xFFFFFFFF);
+  static const muted = Color(0x99FFFFFF);
+  static const faint = Color(0x1FFFFFFF);
 }
 
-class MurojaatlarList extends StatelessWidget {
+class MurojaatlarList extends StatefulWidget {
   final bool isAdmin;
   final String? studentId;
-  const MurojaatlarList({super.key, required this.isAdmin, this.studentId});
+  final String? studentName;
+  // Hozirgi login qilingan foydalanuvchi (mudir/admin javob yozganda "kimdan"
+  // ma'lumotini belgilash uchun kerak).
+  final UserModel? currentUser;
+  // Faqat shu qabul qiluvchiga ("mudir" yoki "admin") yuborilgan murojaatlarni
+  // ko'rsatish uchun filtr. null bo'lsa — barcha murojaatlar ko'rsatiladi
+  // (masalan, admin barcha murojaatlarni: kimdan va kimga yuborilganini ko'radi).
+  final ComplaintTarget? roleFilter;
+  const MurojaatlarList({
+    super.key,
+    required this.isAdmin,
+    this.studentId,
+    this.studentName,
+    this.currentUser,
+    this.roleFilter,
+  });
+
+  @override
+  State<MurojaatlarList> createState() => _MurojaatlarListState();
+}
+
+class _MurojaatlarListState extends State<MurojaatlarList> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    Query query = FirebaseFirestore.instance.collection('complaints');
+    Query query = FirebaseFirestore.instance.collection('murojaatlar');
 
-    if (!isAdmin && studentId != null) {
-      query = query.where('studentId', isEqualTo: studentId);
+    if (!widget.isAdmin && widget.studentId != null) {
+      query = query.where('studentId', isEqualTo: widget.studentId);
+    } else if (widget.isAdmin && widget.roleFilter != null) {
+      // Masalan, mudir faqat o'ziga yuborilgan murojaatlarni ko'radi
+      query = query.where('targetRole', isEqualTo: widget.roleFilter!.value);
     }
 
     return Scaffold(
@@ -38,22 +71,18 @@ class MurojaatlarList extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         title: Text(
-          isAdmin ? "Barcha murojaatlar" : "Mening murojaatlarim",
+          widget.isAdmin
+              ? (widget.roleFilter != null
+                  ? "${widget.roleFilter!.displayName}ga murojaatlar"
+                  : "Barcha murojaatlar")
+              : "Mening murojaatlarim",
           style:
               const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_LC.purple, _LC.violet],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        backgroundColor: _LC.card,
         actions: [
-          if (isAdmin)
+          if (widget.isAdmin)
             PopupMenuButton<String>(
               icon: const Icon(Icons.filter_list_rounded, color: Colors.white),
               shape: RoundedRectangleBorder(
@@ -69,108 +98,190 @@ class MurojaatlarList extends StatelessWidget {
             ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: query.orderBy('createdAt', descending: true).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline_rounded,
-                      size: 56, color: _LC.coral),
-                  const SizedBox(height: 16),
-                  Text("Xatolik: ${snapshot.error}",
-                      style: const TextStyle(color: _LC.muted)),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _LC.purple,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () {},
-                    child: const Text("Qayta urunish",
-                        style: TextStyle(color: Colors.white)),
+      body: Column(
+        children: [
+          // 🔎 Admin va mudir uchun talaba ismi bo'yicha qidiruv
+          if (widget.isAdmin)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _LC.card,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _LC.faint),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) =>
+                      setState(() => _searchQuery = value.trim().toLowerCase()),
+                  decoration: InputDecoration(
+                    hintText: "Talaba ismi bo'yicha qidirish...",
+                    hintStyle: const TextStyle(color: _LC.muted, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search_rounded,
+                        color: _LC.purple, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close_rounded,
+                                color: _LC.muted, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                ],
+                ),
               ),
-            );
-          }
+            ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: query.orderBy('createdAt', descending: true).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline_rounded,
+                            size: 56, color: _LC.coral),
+                        const SizedBox(height: 16),
+                        Text("Xatolik: ${snapshot.error}",
+                            style: const TextStyle(color: _LC.muted)),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _LC.purple,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () => setState(() {}),
+                          child: const Text("Qayta urunish",
+                              style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-          if (!snapshot.hasData) {
-            return const Center(
-                child: CircularProgressIndicator(color: _LC.purple));
-          }
+                if (!snapshot.hasData) {
+                  return const Center(
+                      child: CircularProgressIndicator(color: _LC.purple));
+                }
 
-          var complaints = snapshot.data!.docs;
-          if (complaints.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.forum_outlined,
-                    size: 72,
-                    color: _LC.muted,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Murojaatlar yo'q",
-                    style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: _LC.ink),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    isAdmin
-                        ? "Hali hech qanday murojaat yozilmagan"
-                        : "Siz hali murojaat yozmagansiz",
-                    style: const TextStyle(color: _LC.muted),
-                  ),
-                  if (!isAdmin && studentId != null) ...[
-                    const SizedBox(height: 18),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MurojaatYozish(
-                              studentId: studentId!,
-                              studentName: "",
+                var complaints = snapshot.data!.docs;
+
+                // 🔎 Talaba ismi bo'yicha mahalliy filtrlash
+                if (widget.isAdmin && _searchQuery.isNotEmpty) {
+                  complaints = complaints.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final studentName =
+                        (data['studentName'] ?? '').toString().toLowerCase();
+                    return studentName.contains(_searchQuery);
+                  }).toList();
+                }
+
+                if (complaints.isEmpty) {
+                  final noResultsForSearch =
+                      widget.isAdmin && _searchQuery.isNotEmpty;
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          noResultsForSearch
+                              ? Icons.search_off_rounded
+                              : Icons.forum_outlined,
+                          size: 72,
+                          color: _LC.muted,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          noResultsForSearch
+                              ? "Hech narsa topilmadi"
+                              : "Murojaatlar yo'q",
+                          style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: _LC.ink),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          noResultsForSearch
+                              ? "\"$_searchQuery\" bo'yicha murojaat topilmadi"
+                              : (widget.isAdmin
+                                  ? "Hali hech qanday murojaat yozilmagan"
+                                  : "Siz hali murojaat yozmagansiz"),
+                          style: const TextStyle(color: _LC.muted),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (!widget.isAdmin && widget.studentId != null) ...[
+                          const SizedBox(height: 18),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MurojaatYozish(
+                                    studentId: widget.studentId!,
+                                    studentName: widget.studentName ?? "",
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text("Murojaat yozish"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _LC.purple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text("Murojaat yozish"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _LC.purple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
-              ),
-            );
-          }
+                  );
+                }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(14),
-            itemCount: complaints.length,
-            itemBuilder: (context, index) {
-              var complaint = ComplaintModel.fromJson(
-                  complaints[index].data() as Map<String, dynamic>);
-              return _buildComplaintCard(context, complaint, isAdmin);
-            },
-          );
-        },
+                return ListView.builder(
+                  padding: const EdgeInsets.all(14),
+                  itemCount: complaints.length,
+                  itemBuilder: (context, index) {
+                    var complaint = ComplaintModel.fromJson(
+                            complaints[index].data() as Map<String, dynamic>)
+                        .copyWith(id: complaints[index].id);
+                    return _buildComplaintCard(
+                        context, complaint, widget.isAdmin);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
+      floatingActionButton: (!widget.isAdmin && widget.studentId != null)
+          ? FloatingActionButton.extended(
+              backgroundColor: _LC.purple,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text("Murojaat yozish"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MurojaatYozish(
+                      studentId: widget.studentId!,
+                      studentName: widget.studentName ?? "",
+                    ),
+                  ),
+                );
+              },
+            )
+          : null,
     );
   }
 
@@ -202,6 +313,7 @@ class MurojaatlarList extends StatelessWidget {
                 builder: (_) => MurojaatTafsilotlari(
                   complaint: complaint,
                   isAdmin: isAdmin,
+                  currentUser: widget.currentUser,
                 ),
               ),
             );
@@ -296,6 +408,31 @@ class MurojaatlarList extends StatelessWidget {
                           ),
                         ],
                       ),
+                      // Murojaat kimga (va admin/mudirga — kimdan) yuborilgani
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          // Talaba ham, admin/mudir ham murojaat kimga
+                          // yuborilganini ko'rsin
+                          _tagChip(
+                            icon: Icons.forward_to_inbox_rounded,
+                            label: "Kimga: ${complaint.targetRole.displayName}",
+                            color: _LC.pink,
+                          ),
+                          // "Kimdan" faqat admin/mudir uchun — talaba
+                          // buni o'zi biladi
+                          if (isAdmin)
+                            _tagChip(
+                              icon: Icons.person_outline_rounded,
+                              label: complaint.isAnonymous
+                                  ? "Kimdan: ${complaint.studentName.isNotEmpty ? complaint.studentName : "Noma'lum"} (anonim so'ragan)"
+                                  : "Kimdan: ${complaint.studentName.isNotEmpty ? complaint.studentName : "Noma'lum"}",
+                              color: _LC.teal,
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -309,6 +446,32 @@ class MurojaatlarList extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _tagChip(
+      {required IconData icon, required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9.5,
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

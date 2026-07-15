@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modules/models/user_model.dart';
 import '../modules/models/room_model.dart';
+import '../modules/murojaat/murojaatlar_list.dart';
 import '../auth/login.dart';
 import 'talaba_tolovlar_screen.dart';
 
@@ -41,6 +42,7 @@ class StudentProfileScreen extends StatefulWidget {
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
   int _tab = 0;
   late UserModel? _user;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -49,6 +51,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   }
 
   void _onUserUpdated(UserModel u) => setState(() => _user = u);
+
+  void _selectTab(int i) {
+    Navigator.of(context).maybePop(); // drawer ochiq bo'lsa yopish
+    setState(() => _tab = i);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,24 +67,181 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     final pages = [
       _HomeTab(user: _user, onPayTap: () => setState(() => _tab = 1)),
       TalabaTolovlarScreen(user: _user),
+      MurojaatlarList(
+        isAdmin: false,
+        studentId: _user?.id,
+        studentName: _user?.fullName,
+      ),
       _ProfileTab(user: _user, onUserUpdated: _onUserUpdated),
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: _C.bgBase,
+      drawer: _StudentDrawer(
+        userName:
+            _user?.fullName.isNotEmpty == true ? _user!.fullName : 'Talaba',
+        userEmail: _user?.email ?? '',
+        selected: _tab,
+        onSelect: _selectTab,
+      ),
+      // Sahifalar endi to'liq ekranni egallaydi — pastki navbar olib
+      // tashlandi, chunki u har bir sahifaning o'z FloatingActionButton
+      // tugmasini (masalan "Murojaat yozish") yashirib qo'yayotgan edi.
       body: Stack(
         children: [
           IndexedStack(index: _tab, children: pages),
+          // Doimiy ko'rinadigan menyu (hamburger) tugmasi — Drawer'ni ochadi
           Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _BottomNav(
-              selected: _tab,
-              onTap: (i) => setState(() => _tab = i),
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 12,
+            child: _MenuButton(
+              onTap: () => _scaffoldKey.currentState?.openDrawer(),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Menyuni ochuvchi doimiy tugma ──────────────────────────────
+class _MenuButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MenuButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _C.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _C.white.withOpacity(0.1)),
+          ),
+          child: const Icon(Icons.menu_rounded, color: _C.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Talaba uchun yon menyu (Drawer) ────────────────────────────
+class _StudentDrawer extends StatelessWidget {
+  final String userName;
+  final String userEmail;
+  final int selected;
+  final void Function(int) onSelect;
+
+  const _StudentDrawer({
+    required this.userName,
+    required this.userEmail,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (Icons.home_rounded, 'Bosh sahifa'),
+      (Icons.receipt_long_rounded, "To'lovlar"),
+      (Icons.forum_rounded, 'Murojaat'),
+      (Icons.person_rounded, 'Profil'),
+    ];
+
+    return Drawer(
+      backgroundColor: _C.bgCard,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: _C.purple.withOpacity(0.25),
+                    child: Text(
+                      userName.isNotEmpty ? userName[0].toUpperCase() : 'T',
+                      style: const TextStyle(
+                        color: _C.violet,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            color: _C.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (userEmail.isNotEmpty)
+                          Text(
+                            userEmail,
+                            style: TextStyle(
+                              color: _C.white.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: _C.white.withOpacity(0.08), height: 1),
+            const SizedBox(height: 8),
+            ...items.asMap().entries.map((e) {
+              final i = e.key;
+              final item = e.value;
+              final active = i == selected;
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                child: Material(
+                  color:
+                      active ? _C.purple.withOpacity(0.16) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  child: ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    leading: Icon(
+                      item.$1,
+                      color: active ? _C.violet : _C.muted,
+                    ),
+                    title: Text(
+                      item.$2,
+                      style: TextStyle(
+                        color: active ? _C.violet : _C.white,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    onTap: () => onSelect(i),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -202,7 +366,7 @@ class _ProfileTabState extends State<_ProfileTab> {
     if (mounted) setState(() => _loadingRoom = true);
     try {
       final snap = await FirebaseFirestore.instance
-          .collection('rooms')
+          .collection('xonalar')
           .where('roomNumber', isEqualTo: int.tryParse(rid) ?? -1)
           .limit(1)
           .get();
@@ -212,7 +376,7 @@ class _ProfileTabState extends State<_ProfileTab> {
         found = RoomModel.fromJson(snap.docs.first.data());
       } else {
         final byStudent = await FirebaseFirestore.instance
-            .collection('rooms')
+            .collection('xonalar')
             .where('studentIds', arrayContains: widget.user?.id ?? '')
             .limit(1)
             .get();
@@ -328,7 +492,7 @@ class _ProfileTabState extends State<_ProfileTab> {
                               ss(() => saving = true);
                               try {
                                 await FirebaseFirestore.instance
-                                    .collection('users')
+                                    .collection('foydalanuvchilar')
                                     .doc(user.id)
                                     .update({
                                   'fullName': nameCtrl.text.trim(),
@@ -1310,68 +1474,4 @@ class _LogoutBtn extends StatelessWidget {
           ),
         ),
       );
-}
-
-// ─── Bottom Nav ────────────────────────────────────────────────
-class _BottomNav extends StatelessWidget {
-  final int selected;
-  final void Function(int) onTap;
-  const _BottomNav({required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (Icons.home_rounded, Icons.home_outlined, 'Bosh sahifa'),
-      (Icons.receipt_long_rounded, Icons.receipt_long_outlined, "To'lovlar"),
-      (Icons.person_rounded, Icons.person_outline_rounded, 'Profil'),
-    ];
-    return Container(
-      decoration: BoxDecoration(
-        color: _C.bgBase.withOpacity(0.97),
-        border: Border(top: BorderSide(color: _C.white.withOpacity(0.06))),
-      ),
-      padding: EdgeInsets.only(
-        top: 12,
-        bottom: MediaQuery.of(context).padding.bottom + 12,
-        left: 16,
-        right: 16,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: items.asMap().entries.map((e) {
-          final i = e.key;
-          final item = e.value;
-          final active = i == selected;
-          return GestureDetector(
-            onTap: () => onTap(i),
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-              decoration: BoxDecoration(
-                color:
-                    active ? _C.purple.withOpacity(0.18) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(active ? item.$1 : item.$2,
-                      color: active ? _C.violet : _C.muted, size: 22),
-                  const SizedBox(height: 4),
-                  Text(item.$3,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                        color: active ? _C.violet : _C.muted,
-                      )),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
 }

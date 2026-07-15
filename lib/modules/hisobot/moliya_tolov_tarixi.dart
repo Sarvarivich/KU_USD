@@ -74,7 +74,7 @@ class _MoliyaTolovTarixiState extends State<MoliyaTolovTarixi> {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('payment_checks')
+                  .collection('tolov_cheklari')
                   .where('status', isEqualTo: 'approved')
                   .snapshots(),
               builder: (context, snap) {

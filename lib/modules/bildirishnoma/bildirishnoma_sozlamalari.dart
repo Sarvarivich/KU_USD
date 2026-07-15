@@ -32,7 +32,7 @@ class _BildirishnomaSozlamalariState extends State<BildirishnomaSozlamalari> {
       _paymentReminder = prefs.getBool('payment_reminder') ?? true;
       _complaintResponse = prefs.getBool('complaint_response') ?? true;
       _roomChange = prefs.getBool('room_change') ?? true;
-      _announcements = prefs.getBool('announcements') ?? true;
+      _announcements = prefs.getBool('elonlar') ?? true;
       _isLoading = false;
     });
   }
@@ -45,7 +45,7 @@ class _BildirishnomaSozlamalariState extends State<BildirishnomaSozlamalari> {
     await prefs.setBool('payment_reminder', _paymentReminder);
     await prefs.setBool('complaint_response', _complaintResponse);
     await prefs.setBool('room_change', _roomChange);
-    await prefs.setBool('announcements', _announcements);
+    await prefs.setBool('elonlar', _announcements);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

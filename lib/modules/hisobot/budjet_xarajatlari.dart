@@ -108,7 +108,7 @@ class _ByudjetXarajatlarState extends State<ByudjetXarajatlar> {
               final val = double.tryParse(ctrl.text.trim());
               if (val == null) return;
               await FirebaseFirestore.instance
-                  .collection('finance_budgets')
+                  .collection('moliya_byudjetlari')
                   .doc(_monthKey(_selectedMonth))
                   .set({
                 'monthKey': _monthKey(_selectedMonth),
@@ -243,7 +243,7 @@ class _ByudjetXarajatlarState extends State<ByudjetXarajatlar> {
               onPressed: () async {
                 final amount = double.tryParse(amountCtrl.text.trim());
                 if (titleCtrl.text.trim().isEmpty || amount == null) return;
-                await FirebaseFirestore.instance.collection('expenses').add({
+                await FirebaseFirestore.instance.collection('xarajatlar').add({
                   'title': titleCtrl.text.trim(),
                   'category': category,
                   'amount': amount,
@@ -265,7 +265,7 @@ class _ByudjetXarajatlarState extends State<ByudjetXarajatlar> {
   }
 
   Future<void> _deleteExpense(String id) async {
-    await FirebaseFirestore.instance.collection('expenses').doc(id).delete();
+    await FirebaseFirestore.instance.collection('xarajatlar').doc(id).delete();
   }
 
   Future<double> _incomeForMonth(DateTime month) async {
@@ -273,7 +273,7 @@ class _ByudjetXarajatlarState extends State<ByudjetXarajatlar> {
     final end = DateTime(month.year, month.month + 1, 1);
     double total = 0;
     final snap = await FirebaseFirestore.instance
-        .collection('payment_checks')
+        .collection('tolov_cheklari')
         .where('status', isEqualTo: 'approved')
         .get();
     for (final doc in snap.docs) {
@@ -338,7 +338,7 @@ class _ByudjetXarajatlarState extends State<ByudjetXarajatlar> {
           Expanded(
             child: StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('finance_budgets')
+                  .collection('moliya_byudjetlari')
                   .doc(monthKey)
                   .snapshots(),
               builder: (context, budgetSnap) {
@@ -364,7 +364,7 @@ class _ByudjetXarajatlarState extends State<ByudjetXarajatlar> {
 
                 return StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('expenses')
+                      .collection('xarajatlar')
                       .where('monthKey', isEqualTo: monthKey)
                       .snapshots(),
                   builder: (context, expSnap) {

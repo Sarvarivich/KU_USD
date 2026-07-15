@@ -58,7 +58,7 @@ Future<List<DebtorInfo>> fetchDebtors() async {
   // (masalan "204") yozadi (room_assignment_screen.dart). Shuning
   // uchun narxlar jadvalini ikkala kalit bo'yicha ham to'ldiramiz,
   // toifasidan qat'iy nazar talabaning xonasi to'g'ri topilsin.
-  final roomsSnap = await fs.collection('rooms').get();
+  final roomsSnap = await fs.collection('xonalar').get();
   final Map<String, double> roomPrice = {};
   final Map<String, String> roomLabel = {};
   for (final doc in roomsSnap.docs) {
@@ -79,14 +79,14 @@ Future<List<DebtorInfo>> fetchDebtors() async {
 
   // 2) Barcha talabalarni olish
   final studentsSnap =
-      await fs.collection('users').where('role', isEqualTo: 'talaba').get();
+      await fs.collection('foydalanuvchilar').where('role', isEqualTo: 'talaba').get();
 
   // 3) Har bir talabaning BARCHA tasdiqlangan (approved) to'lovlarini
   //    yig'ib chiqamiz — sana bo'yicha cheklov yo'q.
   final totalPaid = <String, double>{};
   try {
     final checksSnap = await fs
-        .collection('payment_checks')
+        .collection('tolov_cheklari')
         .where('status', isEqualTo: 'approved')
         .get();
     for (final doc in checksSnap.docs) {
@@ -160,7 +160,7 @@ class _QarzdorlarRoyxatiState extends State<QarzdorlarRoyxati> {
 
   Future<void> _sendReminder(DebtorInfo d) async {
     try {
-      await FirebaseFirestore.instance.collection('notifications').add({
+      await FirebaseFirestore.instance.collection('bildirishnomalar').add({
         'userId': d.studentId,
         'title': "To'lov bo'yicha eslatma",
         'body': "Hurmatli talaba, bu oy uchun ${d.roomLabel} to'lovingizdan "

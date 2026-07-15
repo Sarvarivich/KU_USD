@@ -24,7 +24,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('users')
+          .collection('foydalanuvchilar')
           .where('roomId', isEqualTo: widget.room.roomNumber.toString())
           .snapshots(),
       builder: (context, snapshot) {
@@ -168,7 +168,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                         // Hech qaysi xonaga biriktirilmagan talabalar ro'yxatini olish
                         StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance
-                              .collection('users')
+                              .collection('foydalanuvchilar')
                               .where('role', isEqualTo: 'talaba')
                               .snapshots(),
                           builder: (context, studentSnapshot) {
@@ -275,10 +275,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                         FirebaseFirestore.instance.batch();
 
                                     final userRef = FirebaseFirestore.instance
-                                        .collection('users')
+                                        .collection('foydalanuvchilar')
                                         .doc(studentId);
                                     final roomRef = FirebaseFirestore.instance
-                                        .collection('rooms')
+                                        .collection('xonalar')
                                         .doc(widget.roomDocId);
 
                                     batch.update(userRef, {
@@ -383,10 +383,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                     final batch =
                                         FirebaseFirestore.instance.batch();
                                     final userRef = FirebaseFirestore.instance
-                                        .collection('users')
+                                        .collection('foydalanuvchilar')
                                         .doc(studentId);
                                     final roomRef = FirebaseFirestore.instance
-                                        .collection('rooms')
+                                        .collection('xonalar')
                                         .doc(widget.roomDocId);
 
                                     batch.update(userRef, {'roomId': ""});

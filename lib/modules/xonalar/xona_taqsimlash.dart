@@ -27,7 +27,7 @@ class _XonaTaqsimlashState extends State<XonaTaqsimlash> {
     setState(() => _isLoading = true);
 
     QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('users')
+        .collection('foydalanuvchilar')
         .where('role', isEqualTo: 'talaba')
         .where('roomId', isNull: true)
         .get();
@@ -56,7 +56,7 @@ class _XonaTaqsimlashState extends State<XonaTaqsimlash> {
     try {
       // Update room
       await FirebaseFirestore.instance
-          .collection('rooms')
+          .collection('xonalar')
           .doc(widget.room.id)
           .update({
         'currentOccupants': widget.room.currentOccupants + 1,
@@ -68,7 +68,7 @@ class _XonaTaqsimlashState extends State<XonaTaqsimlash> {
 
       // Update student
       await FirebaseFirestore.instance
-          .collection('users')
+          .collection('foydalanuvchilar')
           .doc(_selectedStudent!.id)
           .update({'roomId': widget.room.id});
 

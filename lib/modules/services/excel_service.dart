@@ -8,7 +8,7 @@ class ExcelExportService {
     try {
       // 1. Firebase Firestore'dan talabalarni olamiz
       final QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('users')
+          .collection('foydalanuvchilar')
           .where('role', isEqualTo: 'talaba') // yoki UserRole.talaba.name
           .get();
 

@@ -7,6 +7,7 @@ import '../modules/services/auth_service.dart';
 import '../auth/login.dart';
 import 'talaba_tolovlar_screen.dart';
 import '../modules/bildirishnoma/bildirishnomalar_list.dart';
+import '../modules/murojaat/murojaatlar_list.dart';
 
 // ─── Colors ────────────────────────────────────────────────────
 class _C {
@@ -38,6 +39,7 @@ class TalabaProfileScreen extends StatefulWidget {
 class _TalabaProfileScreenState extends State<TalabaProfileScreen> {
   int _tab = 0;
   late UserModel _user;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -46,6 +48,15 @@ class _TalabaProfileScreenState extends State<TalabaProfileScreen> {
   }
 
   void _goTo(int index) => setState(() => _tab = index);
+
+  // Faqat Drawer ichidan chaqiriladi: avval menyuni yopadi, keyin tabni
+  // almashtiradi. _goTo dan alohida, chunki _goTo "Bosh" sahifadagi tezkor
+  // tugmalar (Yotoqxona/To'lovlar/Murojaat) tomonidan ham chaqiriladi va u
+  // yerda Navigator.pop() chaqirish ekranni ortga qaytarib yuborishi mumkin edi.
+  void _selectFromDrawer(int index) {
+    Navigator.of(context).maybePop(); // drawer ochiq bo'lsa yopish
+    setState(() => _tab = index);
+  }
 
   void _onUserUpdated(UserModel updated) => setState(() => _user = updated);
 
@@ -90,22 +101,158 @@ class _TalabaProfileScreenState extends State<TalabaProfileScreen> {
         roleLabel: roleLabel,
         onEditProfile: () => _openEditProfile(context),
       ),
+      // Talaba yotoqxona mudiriga yoki administratorga murojaat yuborishi
+      // va yuborgan murojaatlarini kuzatib borishi uchun bo'lim
+      MurojaatlarList(
+        isAdmin: false,
+        studentId: user.id,
+        studentName: user.fullName,
+      ),
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: _C.bgBase,
-      body: Stack(
-        children: [
-          IndexedStack(index: _tab, children: pages),
+      drawer: _TalabaDrawer(
+        userName: user.fullName.isNotEmpty ? user.fullName : 'Talaba',
+        userEmail: user.email,
+        selected: _tab,
+        onSelect: _selectFromDrawer,
+      ),
+      // Standart Flutter AppBar ishlatilyapti — "drawer" berilgan bo'lsa,
+      // Flutter menyu (hamburger) belgisini AVTOMATIK qo'shadi va uni bosish
+      // kafolatlangan holda ishlaydi. Bu sahifalarning o'z sarlavhalari bilan
+      // ustma-ust tushib qolish muammosini butunlay yo'q qiladi, chunki
+      // Scaffold "body"ni AppBar balandligiga qarab avtomatik pastga suradi.
+      appBar: AppBar(
+        backgroundColor: _C.bgBase,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: _C.white),
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarBrightness: Brightness.dark,
+          statusBarIconBrightness: Brightness.light,
+        ),
+      ),
+      // Sahifalar endi to'liq ekranni egallaydi — eski pastki navbar olib
+      // tashlandi, chunki u har bir sahifaning o'z FloatingActionButton
+      // tugmasini (masalan "Murojaat yozish") yashirib qo'yayotgan edi.
+      body: IndexedStack(index: _tab, children: pages),
+    );
+  }
+}
 
-          // Bottom nav
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _BottomNav(selected: _tab, onTap: _goTo),
-          ),
-        ],
+// ─── Talaba uchun yon menyu (Drawer) ────────────────────────────
+class _TalabaDrawer extends StatelessWidget {
+  final String userName;
+  final String userEmail;
+  final int selected;
+  final void Function(int) onSelect;
+
+  const _TalabaDrawer({
+    required this.userName,
+    required this.userEmail,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (Icons.home_rounded, 'Bosh'),
+      (Icons.apartment_rounded, 'Yotoqxona'),
+      (Icons.receipt_long_rounded, "To'lovlar"),
+      (Icons.person_rounded, 'Profil'),
+      (Icons.forum_rounded, 'Murojaat'),
+    ];
+
+    return Drawer(
+      backgroundColor: _C.bgCard,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: _C.purple.withOpacity(0.25),
+                    child: Text(
+                      userName.isNotEmpty ? userName[0].toUpperCase() : 'T',
+                      style: const TextStyle(
+                        color: _C.violet,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            color: _C.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (userEmail.isNotEmpty)
+                          Text(
+                            userEmail,
+                            style: TextStyle(
+                              color: _C.white.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: _C.white.withOpacity(0.08), height: 1),
+            const SizedBox(height: 8),
+            ...items.asMap().entries.map((e) {
+              final i = e.key;
+              final item = e.value;
+              final active = i == selected;
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                child: Material(
+                  color:
+                      active ? _C.purple.withOpacity(0.16) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  child: ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    leading: Icon(
+                      item.$1,
+                      color: active ? _C.violet : _C.muted,
+                    ),
+                    title: Text(
+                      item.$2,
+                      style: TextStyle(
+                        color: active ? _C.violet : _C.white,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    onTap: () => onSelect(i),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -190,6 +337,19 @@ class _BoshTab extends StatelessWidget {
                           label: "To'lovlar",
                           color: _C.orange,
                           onTap: () => onOpenTab(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _QuickActionCard(
+                          icon: Icons.forum_rounded,
+                          label: 'Murojaat yuborish',
+                          color: _C.pink,
+                          onTap: () => onOpenTab(4),
                         ),
                       ),
                     ],
@@ -296,7 +456,7 @@ class _YotoqxonaTab extends StatelessWidget {
                         // bo'yicha qidiramiz (room_assignment_screen.dart'da
                         // ham xuddi shu mantiq ishlatiladi).
                         future: FirebaseFirestore.instance
-                            .collection('rooms')
+                            .collection('xonalar')
                             .where('roomNumber',
                                 isEqualTo:
                                     int.tryParse(user.roomId!) ?? user.roomId)
@@ -610,7 +770,7 @@ class _NotificationBell extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('notifications')
+          .collection('bildirishnomalar')
           .where('userId', isEqualTo: userId)
           .where('isRead', isEqualTo: false)
           .snapshots(),
@@ -1326,84 +1486,6 @@ class _LogoutButton extends StatelessWidget {
   }
 }
 
-// ─── Bottom Nav ────────────────────────────────────────────────
-class _BottomNav extends StatelessWidget {
-  final int selected;
-  final void Function(int) onTap;
-
-  const _BottomNav({required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (Icons.home_rounded, Icons.home_outlined, 'Bosh'),
-      (Icons.apartment_rounded, Icons.apartment_outlined, 'Yotoqxona'),
-      (Icons.receipt_long_rounded, Icons.receipt_long_outlined, "To'lovlar"),
-      (Icons.person_rounded, Icons.person_outline_rounded, 'Profil'),
-    ];
-
-    return ClipRect(
-      child: Container(
-        decoration: BoxDecoration(
-          color: _C.bgBase.withOpacity(0.96),
-          border: Border(
-            top: BorderSide(color: Colors.white.withOpacity(0.05)),
-          ),
-        ),
-        padding: EdgeInsets.only(
-          top: 12,
-          bottom: MediaQuery.of(context).padding.bottom + 12,
-          left: 20,
-          right: 20,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: items.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final isActive = index == selected;
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onTap(index),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 44,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? _C.purple.withOpacity(0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      isActive ? item.$1 : item.$2,
-                      color: isActive ? _C.violet : _C.muted,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.$3,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                      color: isActive ? _C.violet : _C.muted,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
 // ─── Edit Profile Sheet ───────────────────────────────────────────
 class _EditProfileSheet extends StatefulWidget {
   final UserModel user;
@@ -1451,7 +1533,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
     try {
       await FirebaseFirestore.instance
-          .collection('users')
+          .collection('foydalanuvchilar')
           .doc(widget.user.id)
           .update({
         'fullName': fullName,

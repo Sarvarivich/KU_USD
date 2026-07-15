@@ -195,7 +195,7 @@ class _TalabaTolovlarScreenState extends State<TalabaTolovlarScreen> {
 
       final base64Data = base64Encode(bytes);
 
-      await FirebaseFirestore.instance.collection('payment_checks').add({
+      await FirebaseFirestore.instance.collection('tolov_cheklari').add({
         'studentId': user.id,
         'studentName': user.fullName,
         'fileName': _selectedFileName,
@@ -244,7 +244,7 @@ class _TalabaTolovlarScreenState extends State<TalabaTolovlarScreen> {
   Future<void> _sendToFinance(String docId) async {
     try {
       await FirebaseFirestore.instance
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .doc(docId)
           .update({
         'status': 'pending',
@@ -553,7 +553,7 @@ class _TalabaTolovlarScreenState extends State<TalabaTolovlarScreen> {
                     )
                   : StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
-                          .collection('payment_checks')
+                          .collection('tolov_cheklari')
                           .where('studentId', isEqualTo: userId)
                           .orderBy('uploadedAt', descending: true)
                           .snapshots(),

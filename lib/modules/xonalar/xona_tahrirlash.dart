@@ -54,7 +54,7 @@ class _XonaTahrirlashState extends State<XonaTahrirlash> {
       setState(() => _isLoading = true);
       
       await FirebaseFirestore.instance
-          .collection('rooms')
+          .collection('xonalar')
           .doc(widget.room.id)
           .update({
             'pricePerMonth': double.parse(_priceController.text),
@@ -109,7 +109,7 @@ class _XonaTahrirlashState extends State<XonaTahrirlash> {
               if (widget.room.studentIds.isNotEmpty) {
                 for (String studentId in widget.room.studentIds) {
                   await FirebaseFirestore.instance
-                      .collection('users')
+                      .collection('foydalanuvchilar')
                       .doc(studentId)
                       .update({'roomId': null});
                 }
@@ -117,7 +117,7 @@ class _XonaTahrirlashState extends State<XonaTahrirlash> {
               
               // Delete room
               await FirebaseFirestore.instance
-                  .collection('rooms')
+                  .collection('xonalar')
                   .doc(widget.room.id)
                   .delete();
               

@@ -90,7 +90,7 @@ class _XonalarListState extends State<XonalarList> {
       BuildContext context, String roomDocId, int roomNumber) async {
     try {
       await FirebaseFirestore.instance
-          .collection('rooms')
+          .collection('xonalar')
           .doc(roomDocId)
           .delete();
       if (context.mounted) {
@@ -113,7 +113,7 @@ class _XonalarListState extends State<XonalarList> {
       BuildContext context, String roomDocId, RoomStatus newStatus) async {
     try {
       await FirebaseFirestore.instance
-          .collection('rooms')
+          .collection('xonalar')
           .doc(roomDocId)
           .update({
         'status': newStatus.name,
@@ -444,7 +444,7 @@ class _XonalarListState extends State<XonalarList> {
                                   runSpacing: 10,
                                   children: availableFacilities.map((facility) {
                                     final bool selected =
-                                        facility['isChecked'] as bool;
+                                        facility['isChecked'] as bool? ?? false;
                                     return GestureDetector(
                                       onTap: () {
                                         setDialogState(() {
@@ -560,7 +560,7 @@ class _XonalarListState extends State<XonalarList> {
                                     // Takroriy xona raqamini tekshirish
                                     final checkRoom = await FirebaseFirestore
                                         .instance
-                                        .collection('rooms')
+                                        .collection('xonalar')
                                         .where('roomNumber', isEqualTo: roomNum)
                                         .get();
 
@@ -577,7 +577,7 @@ class _XonalarListState extends State<XonalarList> {
 
                                     // Firestore uchun yangi unikal ID yaratish
                                     final docRef = FirebaseFirestore.instance
-                                        .collection('rooms')
+                                        .collection('xonalar')
                                         .doc();
 
                                     // Yangi modelimizga mos obyekt tuzish
@@ -721,7 +721,7 @@ class _XonalarListState extends State<XonalarList> {
           : null,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('rooms')
+            .collection('xonalar')
             .orderBy('roomNumber')
             .snapshots(),
         builder: (context, snapshot) {

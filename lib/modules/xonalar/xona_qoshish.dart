@@ -59,7 +59,7 @@ class _XonaQoshishState extends State<XonaQoshish> {
       );
 
       DocumentReference docRef = await FirebaseFirestore.instance
-          .collection('rooms')
+          .collection('xonalar')
           .add(newRoom.toJson());
       await docRef.update({'id': docRef.id});
 

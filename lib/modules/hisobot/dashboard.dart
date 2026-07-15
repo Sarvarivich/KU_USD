@@ -24,7 +24,8 @@ class _C {
 }
 
 class Dashboard extends StatefulWidget {
-  const Dashboard({super.key});
+  final bool showFinancials;
+  const Dashboard({super.key, this.showFinancials = true});
 
   @override
   _DashboardState createState() => _DashboardState();
@@ -43,6 +44,7 @@ class _DashboardState extends State<Dashboard> {
   int _resolvedComplaints = 0;
   bool _isLoading = true;
   String _selectedPeriod = 'month';
+  String? _statsError;
 
   @override
   void initState() {
@@ -57,16 +59,19 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadStats() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _statsError = null;
+    });
 
     try {
       var students = await _firestore
-          .collection('users')
+          .collection('foydalanuvchilar')
           .where('role', isEqualTo: 'talaba')
           .get();
       _totalStudents = students.docs.length;
 
-      var rooms = await _firestore.collection('rooms').get();
+      var rooms = await _firestore.collection('xonalar').get();
       _totalRooms = rooms.docs.length;
 
       _occupiedRooms = rooms.docs.where((doc) {
@@ -97,7 +102,7 @@ class _DashboardState extends State<Dashboard> {
       _occupancyRate =
           _totalRooms > 0 ? (_occupiedRooms / _totalRooms) * 100 : 0;
 
-      var payments = await _firestore.collection('payments').get();
+      var payments = await _firestore.collection('tolovlar').get();
       _totalIncome = payments.docs.fold(0.0, (sum, doc) {
         final amt = doc.data()['amount'];
         if (amt is num) return sum + amt.toDouble();
@@ -105,7 +110,7 @@ class _DashboardState extends State<Dashboard> {
         return sum;
       });
 
-      var complaints = await _firestore.collection('complaints').get();
+      var complaints = await _firestore.collection('murojaatlar').get();
       _pendingComplaints = complaints.docs.where((doc) {
         final data = doc.data();
         return data.containsKey('status') && data['status'] == 'pending';
@@ -117,6 +122,7 @@ class _DashboardState extends State<Dashboard> {
       }).length;
     } catch (e) {
       debugPrint("Error loading stats: $e");
+      _statsError = e.toString();
     }
 
     if (mounted) {
@@ -129,7 +135,7 @@ class _DashboardState extends State<Dashboard> {
     if (text.isEmpty) return;
 
     try {
-      await _firestore.collection('announcements').add({
+      await _firestore.collection('elonlar').add({
         'title': 'Mudir e\'loni',
         'message': text,
         'createdAt': FieldValue.serverTimestamp(),
@@ -207,6 +213,49 @@ class _DashboardState extends State<Dashboard> {
                               ),
                             )
                           else ...[
+                            if (_statsError != null) ...[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: _C.pink.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                      color: _C.pink.withOpacity(0.4)),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.error_outline_rounded,
+                                        color: _C.pink, size: 18),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            "Statistikani yuklab bo'lmadi",
+                                            style: TextStyle(
+                                                color: _C.white,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _statsError!,
+                                            style: const TextStyle(
+                                                color: _C.muted,
+                                                fontSize: 11.5),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                            ],
                             _buildStatsGrid(constraints.maxWidth),
                             const SizedBox(height: 24),
                             _buildAnnouncementCard(),
@@ -216,21 +265,26 @@ class _DashboardState extends State<Dashboard> {
                             const SizedBox(height: 10),
                             _darkFrame(child: BandlikGrafik()),
                             const SizedBox(height: 18),
-                            _sectionLabel("Daromad hisoboti",
-                                Icons.trending_up_rounded, _C.teal),
-                            const SizedBox(height: 10),
-                            _darkFrame(
-                                child: DaromadHisobot(period: _selectedPeriod)),
-                            const SizedBox(height: 18),
+                            if (widget.showFinancials) ...[
+                              _sectionLabel("Daromad hisoboti",
+                                  Icons.trending_up_rounded, _C.teal),
+                              const SizedBox(height: 10),
+                              _darkFrame(
+                                  child:
+                                      DaromadHisobot(period: _selectedPeriod)),
+                              const SizedBox(height: 18),
+                            ],
                             _sectionLabel("Talabalar statistikasi",
                                 Icons.bar_chart_rounded, _C.pink),
                             const SizedBox(height: 10),
                             _darkFrame(child: TalabalarStatistikasi()),
-                            const SizedBox(height: 18),
-                            _sectionLabel("Hisobotni eksport qilish",
-                                Icons.ios_share_rounded, _C.violet),
-                            const SizedBox(height: 10),
-                            _darkFrame(child: HisobotEksport()),
+                            if (widget.showFinancials) ...[
+                              const SizedBox(height: 18),
+                              _sectionLabel("Hisobotni eksport qilish",
+                                  Icons.ios_share_rounded, _C.violet),
+                              const SizedBox(height: 10),
+                              _darkFrame(child: HisobotEksport()),
+                            ],
                           ],
                         ],
                       ),

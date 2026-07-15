@@ -34,7 +34,7 @@ class _DaromadHisobotState extends State<DaromadHisobot> {
     setState(() => _isLoading = true);
 
     QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('payments').get();
+        await FirebaseFirestore.instance.collection('tolovlar').get();
 
     _incomeData.clear();
     _totalIncome = 0;

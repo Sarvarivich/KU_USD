@@ -4,9 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // SignOut kafolatli ishlashi uchun
 import 'package:yotoqxona/modules/models/tolov_cheklari_screen.dart';
 import '../modules/models/user_model.dart';
+import '../modules/talabalar/talabalar_list.dart';
 import '../modules/xonalar/xonalar_list.dart';
 import '../modules/hisobot/dashboard.dart';
 import '../modules/murojaat/murojaatlar_list.dart';
+import '../modules/models/complaint_model.dart';
 import '../modules/services/auth_service.dart';
 
 // ─── Creative dark palette (admin dizayni bilan bir xil til) ───
@@ -42,11 +44,14 @@ class _MudirScreenState extends State<MudirScreen> {
   final List<Widget> _tabs = [];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Diqqat: "Talabalar va Hodimlar" va "Rol boshqaruvi" bo'limlari
-  // mudir profilida ataylab yo'q qilingan.
+  // Diqqat: to'liq "Talabalar va Hodimlar" boshqaruvi (hodimlar, o'chirish)
+  // va "Rol boshqaruvi" bo'limlari mudir profilida ataylab yo'q qilingan.
+  // Mudir faqat talabalar ro'yxatini ko'ra oladi (o'chirish huquqisiz).
   final List<_NavItem> _navItems = const [
     _NavItem('Dashboard', Icons.space_dashboard_rounded,
         Icons.space_dashboard_outlined, _C.violet),
+    _NavItem('Talabalar ro\'yxati', Icons.groups_rounded, Icons.groups_outlined,
+        _C.mint),
     _NavItem('Xonalar', Icons.apartment_rounded, Icons.apartment_outlined,
         _C.orange),
     _NavItem('Murojaatlar', Icons.forum_rounded, Icons.forum_outlined, _C.pink),
@@ -59,9 +64,16 @@ class _MudirScreenState extends State<MudirScreen> {
   void initState() {
     super.initState();
     _tabs.addAll([
-      const Dashboard(),
+      const Dashboard(showFinancials: false),
+      const TalabalarList(isAdmin: false),
       const XonalarList(isAdmin: true),
-      const MurojaatlarList(isAdmin: true, studentId: null),
+      // Mudir faqat o'ziga ("mudir") yuborilgan murojaatlarni ko'radi
+      MurojaatlarList(
+        isAdmin: true,
+        studentId: null,
+        currentUser: widget.user,
+        roleFilter: ComplaintTarget.mudir,
+      ),
       TolovCheklariScreen(onBack: () => setState(() => _selectedIndex = 0)),
       _MudirSettingsTab(user: widget.user),
     ]);
@@ -87,8 +99,8 @@ class _MudirScreenState extends State<MudirScreen> {
     }
   }
 
-  // "To'lov cheklari" (index 3) o'z AppBar'iga ega — qobiqning AppBar'ini berkitamiz
-  bool get _ownsAppBar => _selectedIndex == 3;
+  // "To'lov cheklari" (index 4) o'z AppBar'iga ega — qobiqning AppBar'ini berkitamiz
+  bool get _ownsAppBar => _selectedIndex == 4;
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +117,7 @@ class _MudirScreenState extends State<MudirScreen> {
           ? null
           : _CreativeAppBar(
               title: _navItems[_selectedIndex].label,
-              showGradient: _selectedIndex != 0 && _selectedIndex != 4,
+              showGradient: _selectedIndex != 0 && _selectedIndex != 5,
               onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
               onLogoutTap: _logout,
             ),
@@ -461,7 +473,7 @@ class _TolovBadgeDot extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .where('status', isEqualTo: 'pending')
           .snapshots(),
       builder: (context, snap) {

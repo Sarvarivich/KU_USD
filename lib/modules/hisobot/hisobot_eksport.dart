@@ -20,31 +20,31 @@ class _HisobotEksportState extends State<HisobotEksport> {
       Map<String, dynamic> exportData = {};
 
       // Export based on selection
-      if (_selectedData == 'all' || _selectedData == 'users') {
+      if (_selectedData == 'all' || _selectedData == 'foydalanuvchilar') {
         QuerySnapshot usersSnapshot =
-            await FirebaseFirestore.instance.collection('users').get();
-        exportData['users'] =
+            await FirebaseFirestore.instance.collection('foydalanuvchilar').get();
+        exportData['foydalanuvchilar'] =
             usersSnapshot.docs.map((doc) => doc.data()).toList();
       }
 
-      if (_selectedData == 'all' || _selectedData == 'rooms') {
+      if (_selectedData == 'all' || _selectedData == 'xonalar') {
         QuerySnapshot roomsSnapshot =
-            await FirebaseFirestore.instance.collection('rooms').get();
-        exportData['rooms'] =
+            await FirebaseFirestore.instance.collection('xonalar').get();
+        exportData['xonalar'] =
             roomsSnapshot.docs.map((doc) => doc.data()).toList();
       }
 
-      if (_selectedData == 'all' || _selectedData == 'complaints') {
+      if (_selectedData == 'all' || _selectedData == 'murojaatlar') {
         QuerySnapshot complaintsSnapshot =
-            await FirebaseFirestore.instance.collection('complaints').get();
-        exportData['complaints'] =
+            await FirebaseFirestore.instance.collection('murojaatlar').get();
+        exportData['murojaatlar'] =
             complaintsSnapshot.docs.map((doc) => doc.data()).toList();
       }
 
-      if (_selectedData == 'all' || _selectedData == 'payments') {
+      if (_selectedData == 'all' || _selectedData == 'tolovlar') {
         QuerySnapshot paymentsSnapshot =
-            await FirebaseFirestore.instance.collection('payments').get();
-        exportData['payments'] =
+            await FirebaseFirestore.instance.collection('tolovlar').get();
+        exportData['tolovlar'] =
             paymentsSnapshot.docs.map((doc) => doc.data()).toList();
       }
 
@@ -189,10 +189,10 @@ class _HisobotEksportState extends State<HisobotEksport> {
               runSpacing: 8,
               children: [
                 _buildDataChip('all', "Barcha"),
-                _buildDataChip('users', "Foydalanuvchilar"),
-                _buildDataChip('rooms', "Xonalar"),
-                _buildDataChip('complaints', "Murojaatlar"),
-                _buildDataChip('payments', "To'lovlar"),
+                _buildDataChip('foydalanuvchilar', "Foydalanuvchilar"),
+                _buildDataChip('xonalar', "Xonalar"),
+                _buildDataChip('murojaatlar', "Murojaatlar"),
+                _buildDataChip('tolovlar', "To'lovlar"),
               ],
             ),
             SizedBox(height: 24),

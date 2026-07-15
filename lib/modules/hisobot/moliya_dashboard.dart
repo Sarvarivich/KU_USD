@@ -76,7 +76,7 @@ class _MoliyaDashboardState extends State<MoliyaDashboard> {
     final end = DateTime(now.year, now.month + 1, 1);
 
     _expensesSub = fs
-        .collection('expenses')
+        .collection('xarajatlar')
         .where('monthKey', isEqualTo: _monthKey)
         .snapshots()
         .listen((snap) {
@@ -88,7 +88,7 @@ class _MoliyaDashboardState extends State<MoliyaDashboard> {
     }, onError: (e) => debugPrint('Xarajatlarni kuzatishda xatolik: $e'));
 
     _incomeSub = fs
-        .collection('payment_checks')
+        .collection('tolov_cheklari')
         .where('status', isEqualTo: 'approved')
         .snapshots()
         .listen((snap) {
@@ -114,7 +114,7 @@ class _MoliyaDashboardState extends State<MoliyaDashboard> {
     }, onError: (e) => debugPrint('Tushumni kuzatishda xatolik: $e'));
 
     _budgetSub = fs
-        .collection('finance_budgets')
+        .collection('moliya_byudjetlari')
         .doc(_monthKey)
         .snapshots()
         .listen((doc) {
@@ -133,7 +133,7 @@ class _MoliyaDashboardState extends State<MoliyaDashboard> {
     try {
       // Tasdiqlangan to'lovlar (shu oy)
       final checks = await fs
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .where('status', isEqualTo: 'approved')
           .get();
       double income = 0;
@@ -157,7 +157,7 @@ class _MoliyaDashboardState extends State<MoliyaDashboard> {
 
       // Kutilayotgan murojaatlar
       final pending = await fs
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .where('status', isEqualTo: 'pending')
           .get();
 
@@ -166,7 +166,7 @@ class _MoliyaDashboardState extends State<MoliyaDashboard> {
 
       // Xarajatlar (shu oy)
       final expenses = await fs
-          .collection('expenses')
+          .collection('xarajatlar')
           .where('monthKey', isEqualTo: _monthKey)
           .get();
       double expTotal = 0;
@@ -176,7 +176,7 @@ class _MoliyaDashboardState extends State<MoliyaDashboard> {
 
       // Byudjet
       final budgetDoc =
-          await fs.collection('finance_budgets').doc(_monthKey).get();
+          await fs.collection('moliya_byudjetlari').doc(_monthKey).get();
       final budget =
           (budgetDoc.data()?['monthlyBudget'] as num? ?? 0).toDouble();
 

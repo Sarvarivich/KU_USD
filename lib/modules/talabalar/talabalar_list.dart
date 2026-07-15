@@ -115,7 +115,7 @@ class _TalabalarListState extends State<TalabalarList> {
       // aks holda xona sig'imi (currentOccupants/studentIds) eskicha qolib
       // ketadi.
       final roomsSnap = await _firestore
-          .collection('rooms')
+          .collection('xonalar')
           .where('studentIds', arrayContains: docId)
           .get();
 
@@ -126,7 +126,7 @@ class _TalabalarListState extends State<TalabalarList> {
           'currentOccupants': FieldValue.increment(-1),
         });
       }
-      batch.delete(_firestore.collection('users').doc(docId));
+      batch.delete(_firestore.collection('foydalanuvchilar').doc(docId));
       await batch.commit();
 
       if (context.mounted) {
@@ -235,7 +235,7 @@ class _TalabalarListState extends State<TalabalarList> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore.collection('users').snapshots(),
+        stream: _firestore.collection('foydalanuvchilar').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -432,7 +432,7 @@ class _TalabalarListState extends State<TalabalarList> {
   Future<String?> _getAssignedRoomInfo(String userId) async {
     try {
       final snap = await _firestore
-          .collection('rooms')
+          .collection('xonalar')
           .where('studentIds', arrayContains: userId)
           .limit(1)
           .get();
@@ -652,7 +652,7 @@ class _TalabalarListState extends State<TalabalarList> {
               String newValue = fieldController.text.trim();
               try {
                 await _firestore
-                    .collection('users')
+                    .collection('foydalanuvchilar')
                     .doc(selectedUser.id)
                     .update({fieldName: newValue});
 
@@ -760,7 +760,7 @@ class _TalabalarListState extends State<TalabalarList> {
                     if (!passwordFormKey.currentState!.validate()) return;
                     try {
                       await _firestore
-                          .collection('users')
+                          .collection('foydalanuvchilar')
                           .doc(selectedUser.id)
                           .update(
                               {'password': newPasswordController.text.trim()});

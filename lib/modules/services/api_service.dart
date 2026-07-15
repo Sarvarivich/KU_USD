@@ -122,13 +122,13 @@ class ApiService {
   }
   
   Future<List<dynamic>> getAllUsers() async {
-    return await get('users');
+    return await get('foydalanuvchilar');
   }
   
   // ============ ROOM ENDPOINTS ============
   
   Future<List<dynamic>> getAllRooms() async {
-    return await get('rooms');
+    return await get('xonalar');
   }
   
   Future<Map<String, dynamic>> getRoom(String roomId) async {
@@ -136,7 +136,7 @@ class ApiService {
   }
   
   Future<Map<String, dynamic>> createRoom(Map<String, dynamic> roomData) async {
-    return await post('rooms', roomData);
+    return await post('xonalar', roomData);
   }
   
   Future<Map<String, dynamic>> updateRoom(String roomId, Map<String, dynamic> data) async {
@@ -150,7 +150,7 @@ class ApiService {
   // ============ COMPLAINT ENDPOINTS ============
   
   Future<List<dynamic>> getComplaints({String? status}) async {
-    String endpoint = 'complaints';
+    String endpoint = 'murojaatlar';
     if (status != null) {
       endpoint += '?status=$status';
     }
@@ -162,7 +162,7 @@ class ApiService {
   }
   
   Future<Map<String, dynamic>> createComplaint(Map<String, dynamic> complaintData) async {
-    return await post('complaints', complaintData);
+    return await post('murojaatlar', complaintData);
   }
   
   Future<Map<String, dynamic>> respondToComplaint(String complaintId, String response) async {
@@ -198,7 +198,7 @@ class ApiService {
   // ============ SURVEY ENDPOINTS ============
   
   Future<Map<String, dynamic>> submitSurvey(Map<String, dynamic> surveyData) async {
-    return await post('surveys', surveyData);
+    return await post('sorovnomalar', surveyData);
   }
   
   Future<Map<String, dynamic>> getSurveyStats() async {

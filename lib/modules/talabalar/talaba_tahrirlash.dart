@@ -46,7 +46,7 @@ class _TalabaTahrirlashState extends State<TalabaTahrirlash> {
       };
 
       await FirebaseFirestore.instance
-          .collection('users')
+          .collection('foydalanuvchilar')
           .doc(widget.student.id)
           .update(updateData);
 
@@ -257,7 +257,7 @@ class _TalabaTahrirlashState extends State<TalabaTahrirlash> {
   Future<void> _deleteStudent({int attempt = 1}) async {
     try {
       final roomsSnap = await FirebaseFirestore.instance
-          .collection('rooms')
+          .collection('xonalar')
           .where('studentIds', arrayContains: widget.student.id)
           .get();
 
@@ -269,7 +269,7 @@ class _TalabaTahrirlashState extends State<TalabaTahrirlash> {
         });
       }
       batch.delete(FirebaseFirestore.instance
-          .collection('users')
+          .collection('foydalanuvchilar')
           .doc(widget.student.id));
       await batch.commit();
 

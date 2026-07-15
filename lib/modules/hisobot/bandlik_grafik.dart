@@ -24,7 +24,7 @@ class _BandlikGrafikState extends State<BandlikGrafik> {
 
   Future<void> _loadData() async {
     QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('rooms').get();
+        await FirebaseFirestore.instance.collection('xonalar').get();
 
     for (var doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;

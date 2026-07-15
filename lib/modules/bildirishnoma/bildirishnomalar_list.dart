@@ -14,7 +14,7 @@ class BildirishnomalarList extends StatelessWidget {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('notifications')
+            .collection('bildirishnomalar')
             .where('userId', isEqualTo: userId)
             .snapshots(),
         builder: (context, snapshot) {
@@ -87,7 +87,7 @@ class BildirishnomalarList extends StatelessWidget {
                 ),
                 onDismissed: (direction) async {
                   await FirebaseFirestore.instance
-                      .collection('notifications')
+                      .collection('bildirishnomalar')
                       .doc(notifications[index].id)
                       .delete();
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -105,7 +105,7 @@ class BildirishnomalarList extends StatelessWidget {
                     onTap: () async {
                       if (!isRead) {
                         await FirebaseFirestore.instance
-                            .collection('notifications')
+                            .collection('bildirishnomalar')
                             .doc(notifications[index].id)
                             .update({'isRead': true});
                       }

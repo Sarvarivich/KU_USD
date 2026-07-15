@@ -55,7 +55,7 @@ class _TalabaHujjatlarState extends State<TalabaHujjatlar> {
 
   Future<void> _loadDocuments() async {
     DocumentSnapshot doc = await FirebaseFirestore.instance
-        .collection('users')
+        .collection('foydalanuvchilar')
         .doc(widget.studentId)
         .get();
 
@@ -117,7 +117,7 @@ class _TalabaHujjatlarState extends State<TalabaHujjatlar> {
 
         if (downloadUrl != null) {
           await FirebaseFirestore.instance
-              .collection('users')
+              .collection('foydalanuvchilar')
               .doc(widget.studentId)
               .update({'${documentType}_url': downloadUrl});
 

@@ -469,7 +469,7 @@ class _MurojaatBadgeDot extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('payment_checks')
+          .collection('tolov_cheklari')
           .where('status', isEqualTo: 'pending')
           .snapshots(),
       builder: (context, snap) {

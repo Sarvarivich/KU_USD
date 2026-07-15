@@ -15,6 +15,7 @@ class _TalabaQoshishState extends State<TalabaQoshish> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  String? _selectedFaculty;
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -55,6 +56,7 @@ class _TalabaQoshishState extends State<TalabaQoshish> {
             ? null
             : _studentIdController.text.trim(),
         roomId: null,
+        faculty: _selectedFaculty,
         createdAt: DateTime.now(),
       );
 
@@ -222,6 +224,32 @@ class _TalabaQoshishState extends State<TalabaQoshish> {
                   filled: true,
                   fillColor: Colors.grey.shade50,
                 ),
+              ),
+              SizedBox(height: 16),
+
+              // Faculty Field
+              DropdownButtonFormField<String>(
+                value: _selectedFaculty,
+                decoration: InputDecoration(
+                  labelText: "Fakultet",
+                  hintText: "Fakultetni tanlang",
+                  prefixIcon: Icon(Icons.account_balance_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+                items: kFaculties
+                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                    .toList(),
+                onChanged: (val) => setState(() => _selectedFaculty = val),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Fakultetni tanlang";
+                  }
+                  return null;
+                },
               ),
               SizedBox(height: 16),
 
